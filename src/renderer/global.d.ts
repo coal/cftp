@@ -34,6 +34,8 @@ declare global {
 
       choosePrivateKeyFile(): Promise<string | null>;
 
+      chooseLocalFiles(): Promise<string[]>;
+
       onLog(cb: (line: string) => void): () => void;
     };
   }

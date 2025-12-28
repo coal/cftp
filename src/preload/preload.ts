@@ -29,6 +29,8 @@ contextBridge.exposeInMainWorld('cftp', {
 
   choosePrivateKeyFile: () => ipcRenderer.invoke('cftp:choosePrivateKeyFile'),
 
+  chooseLocalFiles: () => ipcRenderer.invoke('cftp:chooseLocalFiles'),
+
   onLog: (cb: (line: string) => void) => {
     const listener = (_: unknown, line: string) => cb(line);
     ipcRenderer.on('cftp:log', listener);

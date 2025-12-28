@@ -355,6 +355,15 @@ ipcMain.handle('cftp:choosePrivateKeyFile', async () => {
   return res.filePaths[0];
 });
 
+ipcMain.handle('cftp:chooseLocalFiles', async () => {
+  const res = await dialog.showOpenDialog({
+    title: 'Select file(s) to upload',
+    properties: ['openFile', 'multiSelections']
+  });
+  if (res.canceled) return [];
+  return res.filePaths ?? [];
+});
+
 ipcMain.handle('cftp:startDragOut', async (evt, remotePath: string) => {
   if (!mainWindow) return;
   try {

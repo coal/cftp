@@ -9,8 +9,10 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, className?: string) {
 }
 
 function joinRemote(dir: string, child: string) {
-  const base = dir.endsWith('/') ? dir : dir + '/';
-  return base + child;
+  const d = (dir || '.').trim();
+  if (d === '.' || d === '') return child;
+  if (d === '/') return `/${child}`;
+  return `${d.replace(/\/+$/, '')}/${child}`;
 }
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
@@ -270,12 +272,28 @@ const uploadPanel = el('div', 'panel');
 mid.appendChild(uploadPanel);
 uploadPanel.appendChild(Object.assign(el('h2'), { textContent: 'Upload (drag files here)' }));
 
+const uploadActions = el('div', 'actions');
+uploadPanel.appendChild(uploadActions);
+const pickUploadBtn = Object.assign(el('button'), { textContent: 'Select files…' });
+uploadActions.appendChild(pickUploadBtn);
+
 const dz = el('div', 'dropzone');
 dz.innerHTML = `<div>
   <div style="font-weight:650; margin-bottom:6px;">Drop files from Explorer to upload</div>
   <div class="badge">Uploads to the current remote directory</div>
 </div>`;
 uploadPanel.appendChild(dz);
+
+pickUploadBtn.addEventListener('click', async () => {
+  if (!connected) return logLine('UPLOAD: connect first');
+  const remoteDir = remoteDirInput.value.trim() || '.';
+  const localPaths = await window.cftp.chooseLocalFiles();
+  if (!localPaths?.length) return;
+  const res = await window.cftp.uploadFiles({ localPaths, remoteDir });
+  if (!res.ok) return logLine(`UPLOAD ERROR: ${res.error}`);
+  logLine(`Uploaded ${localPaths.length} file(s) → ${remoteDir}`);
+  await refreshRemote();
+});
 
 dz.addEventListener('dragover', (e) => {
   e.preventDefault();
@@ -287,9 +305,27 @@ dz.addEventListener('drop', async (e) => {
   dz.classList.remove('drag');
   if (!connected) return logLine('UPLOAD: connect first');
 
-  const files = Array.from(e.dataTransfer?.files ?? []);
-  const localPaths = files.map((f: any) => (typeof f.path === 'string' ? (f.path as string) : '')).filter(Boolean);
-  if (!localPaths.length) return logLine('UPLOAD: no file paths found (drag from Explorer)');
+  const dt = e.dataTransfer;
+  const files = Array.from(dt?.files ?? []);
+  let localPaths = files
+    .map((f: any) => (typeof f?.path === 'string' ? (f.path as string) : ''))
+    .filter(Boolean);
+
+  // Some environments don't expose File.path; try DataTransferItem -> File as well.
+  if (!localPaths.length && dt?.items?.length) {
+    for (const item of Array.from(dt.items)) {
+      if (item.kind !== 'file') continue;
+      const f: any = item.getAsFile?.();
+      if (f && typeof f.path === 'string' && f.path) localPaths.push(f.path);
+    }
+  }
+
+  if (!localPaths.length) {
+    const names = files.map((f) => f.name).filter(Boolean);
+    logLine(`UPLOAD: no file paths found. Dropped files: ${names.join(', ') || '(none)'}`);
+    logLine('Tip: if dragging doesn’t work, use “Select files…”');
+    return;
+  }
 
   const remoteDir = remoteDirInput.value.trim() || '.';
   const res = await window.cftp.uploadFiles({ localPaths, remoteDir });
