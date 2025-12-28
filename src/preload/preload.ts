@@ -25,7 +25,10 @@ contextBridge.exposeInMainWorld('cftp', {
 
   uploadFiles: (params: { localPaths: string[]; remoteDir: string }) => ipcRenderer.invoke('cftp:uploadFiles', params),
 
-  startDragOut: (remotePath: string) => ipcRenderer.invoke('cftp:startDragOut', remotePath),
+  prepareDragOut: (remotePath: string) => ipcRenderer.invoke('cftp:prepareDragOut', remotePath),
+  startDragLocal: (localPath: string) => ipcRenderer.send('cftp:startDragLocal', localPath),
+
+  downloadFile: (remotePath: string) => ipcRenderer.invoke('cftp:downloadFile', remotePath),
 
   choosePrivateKeyFile: () => ipcRenderer.invoke('cftp:choosePrivateKeyFile'),
 

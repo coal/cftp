@@ -20,6 +20,9 @@ type TunnelParams = { localPort: number; remoteHost: string; remotePort: number 
 
 let mainWindow: BrowserWindow | null = null;
 let logFilePath: string | null = null;
+let lastDragIcon = nativeImage.createFromDataURL(
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+o2xkAAAAASUVORK5CYII='
+);
 
 function log(line: string) {
   try {
@@ -286,7 +289,7 @@ class SshSession {
     const base = path.posix.basename(remotePath);
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cftp-'));
     const localPath = path.join(dir, base);
-    log(`DOWNLOAD ${remotePath} -> ${localPath}`);
+    log(`DRAG-OUT STAGE ${remotePath} -> ${localPath}`);
     await new Promise<void>((resolve, reject) => {
       sftp.fastGet(remotePath, localPath, (err: Error | null | undefined) => {
         if (err) return reject(err);
@@ -294,6 +297,17 @@ class SshSession {
       });
     });
     return localPath;
+  }
+
+  async downloadToLocalPath(remotePath: string, localPath: string) {
+    const { sftp } = this.requireSftp();
+    log(`DOWNLOAD ${remotePath} -> ${localPath}`);
+    await new Promise<void>((resolve, reject) => {
+      sftp.fastGet(remotePath, localPath, (err: Error | null | undefined) => {
+        if (err) return reject(err);
+        resolve();
+      });
+    });
   }
 }
 
@@ -364,21 +378,37 @@ ipcMain.handle('cftp:chooseLocalFiles', async () => {
   return res.filePaths ?? [];
 });
 
-ipcMain.handle('cftp:startDragOut', async (evt, remotePath: string) => {
-  if (!mainWindow) return;
+ipcMain.handle('cftp:downloadFile', async (_evt, remotePath: string) => {
+  try {
+    const suggested = path.posix.basename(remotePath);
+    const res = await dialog.showSaveDialog({
+      title: 'Save remote file as…',
+      defaultPath: suggested
+    });
+    if (res.canceled || !res.filePath) return { ok: false as const, error: 'Canceled' };
+    await session.downloadToLocalPath(remotePath, res.filePath);
+    return { ok: true as const, savedTo: res.filePath };
+  } catch (e: any) {
+    return { ok: false as const, error: String(e?.message ?? e) };
+  }
+});
+
+ipcMain.handle('cftp:prepareDragOut', async (_evt, remotePath: string) => {
   try {
     const localPath = await session.downloadToTemp(remotePath);
-
-    // 1x1 transparent PNG (small; avoids bundling assets).
-    const icon = nativeImage.createFromDataURL(
-      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+o2xkAAAAASUVORK5CYII='
-    );
-
-    // Start OS-level drag from the renderer’s webContents.
-    evt.sender.startDrag({ file: localPath, icon });
-    log(`DRAG-OUT ready: ${remotePath}`);
+    log(`DRAG-OUT staged: now drag again to your destination (Desktop, etc.)`);
+    return { ok: true as const, localPath };
   } catch (e: any) {
-    log(`DRAG-OUT failed: ${String(e?.message ?? e)}`);
+    log(`DRAG-OUT stage failed: ${String(e?.message ?? e)}`);
+    return { ok: false as const, error: String(e?.message ?? e) };
+  }
+});
+
+ipcMain.on('cftp:startDragLocal', (evt, localPath: string) => {
+  try {
+    evt.sender.startDrag({ file: localPath, icon: lastDragIcon });
+  } catch (e: any) {
+    log(`DRAG-OUT startDrag failed: ${String(e?.message ?? e)}`);
   }
 });
 

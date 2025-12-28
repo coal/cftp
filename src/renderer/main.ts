@@ -227,24 +227,53 @@ async function refreshRemote() {
 
 function renderRemote(entries: RemoteEntry[], dir: string) {
   remoteList.innerHTML = '';
+  const staged = new Map<string, string>(); // remotePath -> localPath
   for (const entry of entries) {
     const li = document.createElement('li');
     const left = el('div');
-    const right = el('div', 'badge');
     left.textContent = entry.name;
-    right.textContent = entry.kind;
-    li.appendChild(left);
-    li.appendChild(right);
+
+    const right = el('div');
+    right.style.display = 'flex';
+    right.style.alignItems = 'center';
+    right.style.gap = '10px';
+
+    const kindBadge = el('div', 'badge');
+    kindBadge.textContent = entry.kind;
+    right.appendChild(kindBadge);
 
     const remotePath = joinRemote(dir, entry.name);
 
     if (entry.kind === 'file') {
       li.draggable = true;
-      li.title = 'Drag this file to Explorer to download';
-      li.addEventListener('dragstart', () => {
-        // main process will download to temp + call startDrag with that file
-        void window.cftp.startDragOut(remotePath);
+      li.title = 'Drag to Explorer to download (first drag will stage, second drag will drop)';
+      li.addEventListener('dragstart', (e) => {
+        const localPath = staged.get(remotePath);
+        if (!localPath) {
+          e.preventDefault();
+          logLine('DRAG-OUT: staging file… drag again when ready');
+          void (async () => {
+            const res = await window.cftp.prepareDragOut(remotePath);
+            if (!res.ok) return logLine(`DRAG-OUT ERROR: ${res.error}`);
+            staged.set(remotePath, res.localPath);
+            logLine('DRAG-OUT: staged. Drag again to drop onto Desktop/folder.');
+          })();
+          return;
+        }
+
+        // Start OS drag immediately (must be fast).
+        window.cftp.startDragLocal(localPath);
       });
+
+      const dlBtn = Object.assign(el('button'), { textContent: 'Download…' });
+      dlBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const res = await window.cftp.downloadFile(remotePath);
+        if (!res.ok) return logLine(`DOWNLOAD ERROR: ${res.error}`);
+        logLine(`Saved to: ${res.savedTo}`);
+      });
+      right.appendChild(dlBtn);
     } else if (entry.kind === 'dir') {
       li.title = 'Double-click to open';
       li.addEventListener('dblclick', () => {
@@ -253,6 +282,8 @@ function renderRemote(entries: RemoteEntry[], dir: string) {
       });
     }
 
+    li.appendChild(left);
+    li.appendChild(right);
     remoteList.appendChild(li);
   }
 }

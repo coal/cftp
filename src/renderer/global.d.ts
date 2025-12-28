@@ -30,7 +30,13 @@ declare global {
 
       uploadFiles(params: { localPaths: string[]; remoteDir: string }): Promise<{ ok: true } | { ok: false; error: string }>;
 
-      startDragOut(remotePath: string): Promise<void>;
+      // Drag-out is a 2-step flow:
+      // 1) prepareDragOut(remotePath) downloads to a temp file and returns the local staged path
+      // 2) startDragLocal(localPath) triggers the OS drag immediately (must be fast/synchronous)
+      prepareDragOut(remotePath: string): Promise<{ ok: true; localPath: string } | { ok: false; error: string }>;
+      startDragLocal(localPath: string): void;
+
+      downloadFile(remotePath: string): Promise<{ ok: true; savedTo: string } | { ok: false; error: string }>;
 
       choosePrivateKeyFile(): Promise<string | null>;
 
