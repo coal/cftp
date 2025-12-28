@@ -1,0 +1,217 @@
+:root {
+  color-scheme: light;
+  --bg: #0b1220;
+  --panel: #0f1a30;
+  --text: #e8eefc;
+  --muted: #b7c3e6;
+  --border: rgba(255, 255, 255, 0.12);
+  --accent: #6ea8fe;
+  --danger: #ff6b6b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu,
+    Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  background: radial-gradient(1200px 800px at 20% 10%, #13264d 0%, var(--bg) 50%);
+  color: var(--text);
+}
+
+a {
+  color: var(--accent);
+}
+
+.container {
+  height: 100%;
+  padding: 18px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 14px;
+}
+
+.row {
+  display: grid;
+  gap: 12px;
+}
+
+.top {
+  grid-template-columns: 1.2fr 1fr;
+}
+
+.panel {
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  backdrop-filter: blur(10px);
+}
+
+.panel h2 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+input,
+button {
+  font: inherit;
+}
+
+input {
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--text);
+  outline: none;
+}
+
+input:focus {
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--border));
+  box-shadow: 0 0 0 3px rgba(110, 168, 254, 0.18);
+}
+
+.grid2 {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.grid3 {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+button {
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  cursor: pointer;
+}
+
+button.primary {
+  background: rgba(110, 168, 254, 0.22);
+  border-color: rgba(110, 168, 254, 0.45);
+}
+
+button.danger {
+  background: rgba(255, 107, 107, 0.18);
+  border-color: rgba(255, 107, 107, 0.4);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.mid {
+  grid-template-columns: 1fr 1fr;
+}
+
+.status {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.dropzone {
+  border: 1px dashed rgba(255, 255, 255, 0.26);
+  border-radius: 14px;
+  padding: 16px;
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: var(--muted);
+}
+
+.dropzone.drag {
+  border-color: rgba(110, 168, 254, 0.8);
+  background: rgba(110, 168, 254, 0.08);
+  color: var(--text);
+}
+
+.remoteListHeader {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.remoteListHeader input {
+  flex: 1;
+}
+
+.filelist {
+  max-height: 340px;
+  overflow: auto;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.filelist li {
+  padding: 9px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.filelist li:last-child {
+  border-bottom: none;
+}
+
+.filelist li:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.badge {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.log {
+  height: 120px;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  font-size: 11px;
+  color: rgba(232, 238, 252, 0.9);
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  white-space: pre-wrap;
+}
+
+
