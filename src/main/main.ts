@@ -19,8 +19,17 @@ type ConnectParams = {
 type TunnelParams = { localPort: number; remoteHost: string; remotePort: number };
 
 let mainWindow: BrowserWindow | null = null;
+let logFilePath: string | null = null;
 
 function log(line: string) {
+  try {
+    if (!logFilePath && app.isReady()) {
+      logFilePath = path.join(app.getPath('userData'), 'cftp.log');
+    }
+    if (logFilePath) fs.appendFileSync(logFilePath, line + os.EOL);
+  } catch {
+    // ignore logging failures
+  }
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('cftp:log', line);
 }
 
@@ -45,6 +54,16 @@ async function createMainWindow() {
       // Keep this utility simple and compatible: sandboxed renderers sometimes break preload/IPC in certain environments.
       sandbox: false
     }
+  });
+
+  mainWindow.webContents.on('did-fail-load', (_e, code, desc, url) => {
+    log(`LOAD FAILED (${code}): ${desc} (${url})`);
+  });
+  mainWindow.webContents.on('render-process-gone', (_e, details) => {
+    log(`RENDERER GONE: reason=${details.reason} exitCode=${details.exitCode}`);
+  });
+  mainWindow.webContents.on('console-message', (_e, level, message, line, sourceId) => {
+    log(`RENDERER CONSOLE [${level}] ${message} (${sourceId}:${line})`);
   });
 
   if (app.isPackaged) {
